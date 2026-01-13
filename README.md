@@ -18,7 +18,7 @@
     - [1. 코드 수집 (Ingestion)](#1-코드-수집-git-sync)
     - [2. 인덱서 (Indexer)](#2-인덱서-code-parsing--indexing)
     - [3. 텍스트 검색 (Text Index)](#3-텍스트-검색-keyword-index)
-    - [4. 의미 검색 (Vector Index)](#4-의미-검색-semantic-index)
+    - [4. 의미 검색 (Vector Index)](#4-의미-검색-vector-index)
     - [5. 검색 API (Search Layer)](#5-검색-api-레이어)
     - [6. LLM/RAG (Optional)](#6-llm--rag-optional)
 4. [기술 스택](#-기술-스택)
@@ -77,6 +77,18 @@ graph TD
 -   **실시간 동기화:** Webhook을 통해 코드 변경 사항을 즉시 반영.
 -   **AI 기반 코드 설명 (RAG):** 검색된 코드를 LLM이 요약, 설명, 리팩토링 제안.
 -   **IDE 통합:** VS Code, JetBrains 등의 IDE에서 에디터 이탈 없이 검색.
+
+---
+
+## 💾 데이터 저장소 전략
+
+각 데이터의 특성에 가장 적합한 DB를 선정하여 성능과 유지보수성을 확보합니다.
+
+| 역할 | 기술 스택 | 저장 데이터 | 이유 |
+| :--- | :--- | :--- | :--- |
+| **Primary DB** | **PostgreSQL** | 코드 블록 메타데이터(파일 경로, 라인 수), 사용자 정보, 권한(ACL), 검색 로그 | 관계형 데이터의 무결성 보장 및 JSONB를 활용한 유연한 스키마 |
+| **Text Search** | **Meilisearch** / ES | 소스 코드 원문, 토큰화된 인덱스 | 오타 보정, 하이라이팅, 고속 키워드/정규식 검색에 최적화 |
+| **Vector DB** | **Qdrant** / pgvector | 코드 임베딩 벡터 (Float array) | 고차원 벡터의 근사 최근접 이웃(ANN) 검색 속도 최적화 |
 
 ---
 
@@ -164,6 +176,7 @@ graph TD
 | 분류 | 기술 / 도구 | 비고 |
 | :--- | :--- | :--- |
 | **Backend** | Python (FastAPI) or Go (Fiber) | 고성능 API 처리 |
+| **Primary DB** | **PostgreSQL** | 메타데이터, 사용자, 로그 관리 |
 | **Parser** | **Tree-sitter** | 언어별 문법 파싱 및 AST 추출 |
 | **Text Search** | Elasticsearch, **Meilisearch** | 키워드 검색 엔진 |
 | **Vector DB** | **Qdrant**, Milvus, pgvector | 고차원 벡터 검색 |
@@ -185,12 +198,19 @@ graph TD
     -   `search-engine`: Meilisearch + Qdrant
     -   `api-server`: 통합 검색 API
     -   `llm-server`: (Optional) Local LLM for simple tasks
+    -   `postgres`: 메타데이터 및 pgvector 사용 시 벡터 저장 겸용
+    -   `meilisearch`: 텍스트 검색 엔진
+    -   `qdrant`: (옵션) 전용 벡터 DB 사용 시
 
 ### 확장 전략 (Scale-out)
 트래픽 및 데이터 증가 시 다음과 같은 순서로 분리합니다.
 1.  **Search Cluster:** Elasticsearch/Meilisearch 클러스터 분리
 2.  **Vector/GPU:** 벡터 DB 및 임베딩/LLM 추론용 GPU 서버 분리
 3.  **Indexer:** 인덱싱 워커 노드 증설
+
+### 운영 및 모니터링
+-   **Logging:** PostgreSQL에 검색 쿼리 로그 적재 (인기 검색어 분석용).
+-   **Monitoring:** Prometheus + Grafana로 각 DB 및 API 지연 시간 추적.
 
 ---
 

@@ -6,6 +6,8 @@
 
 회사 Monorepo를 대상으로 **코드를 정확하게 찾아주고(Keyword Match), 의미까지 이해하는(Semantic Search) 검색 엔진** 아키텍처입니다.
 
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/4443f954-c15a-453d-bc3d-4671ffd08288" />
+
 대규모 코드베이스에서 개발 생산성을 높이기 위해 텍스트 인덱싱과 벡터 임베딩을 결합한 하이브리드 검색 시스템을 구축합니다.
 
 ---
